@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.TeacherMapper">
+	<select id="teSelectCourPubsign"
+		resultType="com.javabeans.Course">
+		SELECT DISTINCT cou_name cname
+		FROM course,teach,enroll
+		WHERE
+		teach.tea_no=#{tno}
+		AND teach.cou_no=course.cou_no
+		AND
+		enroll.teach_no=teach.teach_no
+		AND semester=#{semester}
+	</select>
+	<select id="publishSign" resultType="int">
+		INSERT INTO attend_pub
+		VALUES(null,(SELECT teach_no
+		FROM course,teach
+		WHERE cou_name=#{cname}
+		AND
+		tea_no=#{tno} AND teach.cou_no=course.cou_no
+		),#{time},#{state},#{longitude},#{latitude});
+		SELECT MAX(pub_id)
+		FROM
+		attend_pub
+	</select>
+	<select id="getSignStudent" parameterType="int"
+		resultType="com.javabeans.Student">
+		SELECT student.stu_no sno,stu_name sname
+		FROM
+		attendance,student
+		WHERE
+		attendance='签到'
+		AND
+		attendance.pub_id=#{pubId}
+		AND
+		student.stu_no=attendance.stu_no
+	</select>
+	<select id="getUnSignStudent" resultType="com.javabeans.Student">
+		SELECT student.stu_no
+		sno,stu_name sname
+		FROM enroll,student
+		WHERE
+		enroll.stu_no NOT IN(
+		SELECT
+		student.stu_no
+		FROM
+		attendance,student
+		WHERE
+		attendance='签到'
+		AND
+		attendance.pub_id=#{pubId}
+		AND
+		student.stu_no=attendance.stu_no)
+		AND
+		enroll.stu_no=student.stu_no
+		AND
+		semester=#{semester}
+	</select>
+	<update id="closeSign" parameterType="int">
+		UPDATE attend_pub
+		SET
+		state="关闭"
+		WHERE pub_id=#{pubId}
+	</update>
+
+	<select id="getTeacherIm" resultMap="teacher_college_resultmap">
+		select tea_no,tea_name,
+		tea_sex,tea_phone,College.college_no,
+		college_name
+		from teacher,college
+		where teacher.college_no=college.college_no
+		AND tea_no=#{tno}
+	</select>
+	<resultMap type="com.javabeans.Teacher"
+		id="teacher_college_resultmap">
+		<id property="tno" column="tea_no" />
+		<result property="tname" column="tea_name" />
+		<result property="sex" column="tea_sex" />
+		<result property="phoneNumber" column="tea_phone" />
+		<result property="collegeNo" column="college_no" />
+		<!-- 配置一对一关联映射 -->
+		<association property="college"
+			javaType="com.javabeans.College">
+			<id property="collegeNo" column="college_no" />
+			<result property="collegeName" column="college_name" />
+		</association>
+	</resultMap>
+
+	<select id="getAllStudent" resultMap="student_class_resultmap">
+		SELECT
+		stu_no,stu_name,stu_sex,stu_phone,student.class_no,class_name,class.college_no,
+		college_name
+		FROM student,class,college
+		WHERE student.class_no=class.class_no
+		AND class.college_no=college.college_no
+	</select>
+	<resultMap type="com.javabeans.Student"
+		id="student_class_resultmap">
+		<id property="sno" column="stu_no" />
+		<result property="sname" column="stu_name" />
+		<result property="sex" column="stu_sex" />
+		<result property="phoneNumber" column="stu_phone" />
+		<result property="classNo" column="class_no" />
+		<!-- 配置一对一关联映射 -->
+		<association property="stuclass"
+			javaType="com.javabeans.StuClass">
+			<id property="classNo" column="class_no" />
+			<result property="className" column="class_name" />
+			<result property="collegeNo" column="college_no" />
+			<association property="college" javaType="com.javabeans.College">
+				<id property="collegeNo" column="college_no" />
+				<result property="collegeName" column="college_name" />
+			</association>
+		</association>
+	</resultMap>
+
+	<select id="teGetEnrollCourse" resultType="com.javabeans.Course">
+		SELECT DISTINCT cou_name cname
+		FROM Enroll,teach,course
+		WHERE tea_no=#{tno} AND semester=#{semester}
+		AND Enroll.teach_no=teach.teach_no AND teach.cou_no=
+		course.cou_no
+	</select>
+	
+	<select id="teGetEnroCourStudent" resultMap="student_class_resultmap">
+		SELECT student.stu_no,stu_name,class_name
+		FROM enroll,teach,course,student,class
+		WHERE tea_no=#{tno} AND semester=#{semester}
+		AND Enroll.teach_no=teach.teach_no AND teach.cou_no=
+		course.cou_no AND class.class_no=student.class_no
+		AND student.stu_no=enroll.stu_no
+		AND cou_name=#{cname}
+	</select>
+
+</mapper>
